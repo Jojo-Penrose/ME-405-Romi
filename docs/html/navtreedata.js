@@ -39,6 +39,7 @@ var NAVTREE =
       [ "Romi Pin Connections", "index.html#ss_pins", null ],
       [ "PYBFLASH", "index.html#ss_pybflash", null ]
     ] ],
+    [ "README", "md__r_e_a_d_m_e.html", null ],
     [ "Namespaces", "namespaces.html", [
       [ "Namespace List", "namespaces.html", "namespaces_dup" ],
       [ "Namespace Members", "namespacemembers.html", [
