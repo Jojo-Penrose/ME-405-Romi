@@ -1,0 +1,36 @@
+ME 405 Romi Pin Connections
+
+Drive Left:
+    Motor_Dir:  PB5 (blue)
+    Motor_Eff:  PB4 (green)
+    Enc_Ch1:    PA5 (yellow)        
+    Enc_Ch2:    PB3 (blue)
+    
+    
+Drive Right: 
+    Motor_Dir:  PA1 (blue)
+    Motor_Eff:  PA0 (green)
+    Enc_Ch1:    PB6 (yellow)
+    Enc_Ch2:    PB7 (blue)
+    
+I2C Ch 1 for BNO:
+    SCL:        PB8 (blue)
+    SDA:        PB9 (yellow)    
+    
+Line Sensors:
+    Axial:
+    L2:         PC2 (blue)      # Far left
+    L1:         PC3 (green)     # Mid left
+    C:          PA4 (gray)      # Center, Arduino pin A2
+    R1:         PB0 (orange)    # Mid right, Arduino pin A3
+    R2:         PC1 (purple)    # Far right, Arduino pin A4
+    
+    Front:
+    FL2:        PA6 (blue)      # Far left         
+    FL1:        PA7 (green)     # Mid left
+    FC:         PC4 (white)     # Center
+    FR1:        PA3 (orange)    # Mid right 
+    FR2:        PA2 (purple)    # Far right
+    
+Lidar:
+    Lidar:      PC0 (white)
