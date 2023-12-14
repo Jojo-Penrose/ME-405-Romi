@@ -40,8 +40,8 @@ class LidarSensor():
 
     def getDistance(self):
         '''!@brief      Helper function that measures the distance sensed by the LIDAR sensor.
-            @details    The calculation can be found in Pololu's documentation for the sensor
-                        on their website (item # 4064).
+            @details    TThe returned distance is in millimeters. The calculation can be found 
+                        in Pololu's documentation for the sensor on their website (item # 4064).
         '''
         self.d_calc = 3/4*(self.dt.get()-1000) # [mm]
             

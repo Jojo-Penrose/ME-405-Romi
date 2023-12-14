@@ -40,7 +40,7 @@ class RomiMot():
         '''
         # Set up access to motor data Shares
         self.EN_share = ShareTuple[0]           # motor enable Share
-        self.EN_share.put(1)                    # Initialize enable bool
+        self.EN_share.put(0)                    # Initialize enable bool
         self.duty_share = ShareTuple[1]         # motor duty cycle Share
         self.duty_share.put(0)                  # Initialize duty cycle
         

@@ -51,15 +51,14 @@ micropython.alloc_emergency_exception_buf(100)  # please verbose exceptions
 
 
 
-# def BlueButtonCB(line):
-#     global mot_L, mot_R
-    
-#     if mot_L.EN and mot_R.EN:
-#         mot_L.EN = False
-#         mot_R.EN = False
-#     else:
-#         mot_L.EN = True
-#         mot_R.EN = True
+def BlueButtonCB(line):
+    global mot_EN_L, mot_EN_R
+    if mot_L.EN and mot_R.EN:
+        mot_EN_L.put(0)
+        mot_EN_R.put(0)
+    elif not mot_L.EN and not mot_R.EN:
+        mot_EN_L.put(1)
+        mot_EN_R.put(1)
     
 
 
@@ -113,9 +112,10 @@ if __name__ == '__main__':
     
     ''' Line Sensors '''
     # Line Sensors:
-    ax_sens_val_share = Share('f')      # Final sensor value Share
+    sens_val_share = Share('f')         # Final sensor value Share
     finish_flag = Queue('B', 1)         # trash flag for finish line detection
-    LS_shares = (ax_sens_val_share, finish_flag)
+    sens_sum_share = Share('f')         # Sensor sum Share
+    LS_shares = (sens_val_share, finish_flag, sens_sum_share)
 
     ''' Drive L '''
     # Encoder:
@@ -252,13 +252,13 @@ if __name__ == '__main__':
     
     # Finally, construct Romi's BRAIN!!!
     LineController = LineCL(1)
-    MM = RomiMM(dict_L, dict_R, BNO_shares, LS_shares, W, r, LineController)
+    MM = RomiMM(dict_L, dict_R, BNO_shares, LS_shares, distance, W, r, LineController)
     
     # Create lidar pulse width measurement interrupt
     lidar_int = ExtInt(Pin.cpu.C0, ExtInt.IRQ_RISING_FALLING, Pin.PULL_NONE, DistInt)
     
     # Create blue button motor override interrupt
-    # blue_int = ExtInt(Pin.cpu.C13, ExtInt.IRQ_FALLING, Pin.PULL_NONE, BlueButtonCB)
+    blue_int = ExtInt(Pin.cpu.C13, ExtInt.IRQ_FALLING, Pin.PULL_NONE, BlueButtonCB)
     
     ''' End firmware initialization '''
     
@@ -305,7 +305,8 @@ if __name__ == '__main__':
     
     print('Romi lives!')
     while True:
-        try:
+        try:                
+            
             cotask.task_list.rr_sched()     # run the scheduler forever!
     
         except KeyboardInterrupt:

@@ -33,15 +33,19 @@ class LineSensors():
                             and to communicate with the main program.
                             LS_shares[0] = sensor value     [--]    (float)
                             LS_shares[1] = finish line flag [trash] (flag)
+                            LS_shares[2] = sensor sum       [--]    (float)
                             
             @param      LS_shares   A tuple containing all of LineSensor's Shares objects.
             @param      Pins        A tuple containing all of the ADC objects associated with
                                     each line sensor.
         '''
         # Set up access to line sensor Shares
-        self.ax_sens_val_share = LS_shares[0]   # Final sensor value Share
-        self.ax_sens_val_share.put(0)           # Initialize sensor value
+        self.sens_val_share = LS_shares[0]      # Final sensor value Share
+        self.sens_val_share.put(0)              # Initialize sensor value
         self.finish_flag = LS_shares[1]         # finish line detect trash flag Queue
+        self.sens_sum_share = LS_shares[2]      # Sensor sum Share
+        self.sens_sum_share.put(0)              # Initialize sensor sum
+        self.finish_flag.clear()                # clear just in case
         
         # Create ADC references
         # Axial
@@ -58,8 +62,14 @@ class LineSensors():
         self.FR2 = Pins[9]          # Far right
         
         # Internal variables
-        self.ax_sens_val = 0.0      # weighted sensor value
+        self.sens_val = 0.0      # weighted sensor value
         self.Cval = 0.0             # center sensor value (fraction)
+        self.allsum = 0.0           # sum of all sensors
+        self.summid = 0.0           # sum of middle three sensors
+        self.offline = 0.35         # sumall when seeing white
+        self.midoff = 0.20         # summid when seeing white
+        self.whsens = 0.065         # one sensor val when it sees white
+        self.midweak = 0.60         # summid when just going into deadzone
         
         # Useful line sensing flags
         self.offline_flag = 0       # True if no sensors detecting line
@@ -67,7 +77,7 @@ class LineSensors():
         
         
 
-    def get_ax_sens_val(self): 
+    def get_sens_val(self): 
         '''!@brief      Read line sensors and calculate weighted sensor reading.
             @details    The method first reads all of the line sensors' ADC readings. Then
                         it calculates a weighted "sensor value," a signed number whose sign
@@ -94,44 +104,71 @@ class LineSensors():
         R1val = self.FR1.read()/4095
         R2val = self.FR2.read()/4095
         
-        # print(f'L2: {L2val}; L1: {L1val}; C: {Cval}; R1: {R1val}; R2: {R2val}')
-        
         # Save Cval
         self.Cval = Cval
         
-        # Check for loss of the line and calculate the weighted sensor reading.
-        if sum((L2val, L1val, R1val, R2val)) < 0.4 and self.ax_sens_val > 0:
-            # print('you went into the circle')
-            self.ax_sens_val = 2.0
+        # Save sumall
+        self.sumall = sum((L2val, L1val, Cval, R1val, R2val))
+        self.summid = sum((L1val, Cval, R1val))
+        
+        # # sensval calculation
+        # # Off line conditions
+        # if self.summid < self.midoff and self.sens_val > 2.4:
+        #     # print('off line to the right')
+        #     self.sens_val = 2.5
+        #     self.offline_flag = 1
+        # elif self.summid < self.midoff and self.sens_val < -2.4:
+        #     # print('off line to the left')
+        #     self.sens_val = -2.5
+        #     self.offline_flag = 1
+        # # Outer edge conditions
+        # elif self.summid < self.midweak and R2val > self.whsens:
+        #     # print('far right mode')
+        #     self.sens_val = sum((0*L2val, 0*L1val, 2*R1val, 5*R2val))
+        # elif self.summid < self.midweak and L2val > self.whsens:
+        #     # print('far left mode')
+        #     self.sens_val = sum((-5*L2val, -2*L1val, 0*R1val, 0*R2val))
+        # # Normal, on line condition
+        # else:
+        #     # Weighted sum. Don't add center so it adds up to zero
+        #     self.sens_val = sum((-2.5*L2val, -1.0*L1val, 1.0*R1val, 2.5*R2val))
+            
+        # sensval calculation
+        # Off line conditions
+        if self.sumall < self.offline and self.sens_val > 0:
+            # print('off line to the right')
+            self.sens_val = 1.5
             self.offline_flag = 1
-        elif sum((L2val, L1val, R1val, R2val)) < 0.4 and self.ax_sens_val < 0:
-            # print('you went out of the circle')
-            self.ax_sens_val = -2.0
+        elif self.sumall < self.offline and self.sens_val < 0:
+            # print('off line to the left')
+            self.sens_val = -1.5
             self.offline_flag = 1
+        # Normal, on line condition
         else:
             # Weighted sum. Don't add center so it adds up to zero
-            self.ax_sens_val = sum((-2.5*L2val, -4*L1val, 4*R1val, 2.5*R2val))
+            self.sens_val = sum((-2.5*L2val, -0.5*L1val, 0.5*R1val, 2.5*R2val))
             
         # If currently lost, check if the line was reacquired
-        if self.offline_flag == 1 and sum((L2val, L1val, R1val, R2val)) > 0.3:
+        if self.offline_flag == 1 and self.sumall > self.offline:
             # print('you are back on the line')
             self.offline_flag = 0
             
         # Finish line detection
-        if sum((L2val, L1val, R1val, R2val)) > 2.0:
+        if self.finish_flag.empty() and self.sumall > 1.7:
             # print('all sensors high. potentially on the finish line')
             self.finish_maybe = 1
             
         # Confirm finish line when sensor value falls
-        if self.finish_maybe == 1 and sum((L2val, L1val, R1val, R2val)) < 0.4:
+        if self.finish_maybe == 1 and self.sumall < self.offline:
             # print('finish line detected')
             self.finish_maybe = 0
             self.finish_flag.put(1)
-        elif self.finish_maybe == 1 and sum((L2val, L1val, R1val, R2val)) < 1.0:
-            # print('false alarm')
-            self.finish_maybe = 0
             
-        # print(f'Sum of all sensors: {sum((L2val, L1val, R1val, R2val))}')
+        # print(f'L2: {L2val}; L1: {L1val}; C: {Cval}; R1: {R1val}; R2: {R2val}')
+        # print(f'L2: {L2val}; summid: {self.summid}; R2: {R2val}')
+        # print(f'Sum of all sensors: {self.sumall}')
+        # print(f'sensor val: {self.sens_val}')
+        # print(f'sensor val: {self.sens_val}; L2: {L2val}; summid: {self.summid}; R2: {R2val}')
         
         
         
@@ -157,11 +194,17 @@ class LineSensors():
             #     self.c_flag.clear()
                     
             # Read sensors and push weighted reading
-            self.get_ax_sens_val()                          # read sensors
-            self.ax_sens_val_share.put(self.ax_sens_val)    # push weighted val to Share
+            self.get_sens_val()                         # read sensors
+            self.sens_val_share.put(self.sens_val)      # push weighted val to Share
+            self.sens_sum_share.put(self.sumall)      # push weighted val to Share
+            
+            # print(f'sumall: {self.sumall}')
+            
+            # if self.finish_flag.full():
+            #     print('~~~~~~~~~~~~~~~~~~~~~~~~~~')
             
             # DEBUG
-            # print(f'Sensor reading: {ax_sens_val}')
+            # print(f'Sensor reading: {sens_val}')
             # DEBUG
             
             yield 1                         # end of task

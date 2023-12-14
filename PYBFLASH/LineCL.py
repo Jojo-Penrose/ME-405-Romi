@@ -66,7 +66,7 @@ class LineCL():
             self.satEn = False      # Lower saturation enabled flag
         
         
-    def Kp(self, newKp):    
+    def ChangeKp(self, newKp):    
         '''!@brief      Update proportional gain Kp with a new value
             @details    Update proportional gain Kp with a new value
             @param      newKp   New value for proportional gain
@@ -78,7 +78,7 @@ class LineCL():
             self.Kp = newKp
         
         
-    def Ki(self, newKi):    
+    def ChangeKi(self, newKi):    
         '''!@brief      Update integral gain Ki with a new value
             @details    Update integral gain Ki with a new value. Set to 0 to
                         turn off integral control.
@@ -91,7 +91,7 @@ class LineCL():
             self.Ki = newKi
         
         
-    def Kd(self, newKd):    
+    def ChangeKd(self, newKd):    
         '''!@brief      Update derivative gain Kd with a new value
             @details    Update derivative gain Kd with a new value. Set to 0 to
                         turn off derivative control.

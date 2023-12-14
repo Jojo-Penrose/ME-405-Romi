@@ -89,8 +89,9 @@ class RomiMM():
         self.BNO_eul_x = BNO_shares[2]          # BNO compass Share
         self.BNO_cal_flag = BNO_shares[1]       # BNO cal flag Queue
         self.BNO_z_flag = BNO_shares[8]         # BNO zero flag Queue
-        self.ax_sens_val_share = LS_shares[0]   # Axial sensor value Share
+        self.sens_val_share = LS_shares[0]      # Axial sensor value Share
         self.finish_flag = LS_shares[1]         # finish line trash flag Queue
+        self.sens_sum_share = LS_shares[2]      # Axial sensor value Share
         self.LidarDist = LidarDist              # [mm] distance sensor Share
         
         # Store Romi attributes
@@ -107,6 +108,8 @@ class RomiMM():
         self.w_R = 0.0          # [rad/s]   Right motor angular velocity. Pulled from Encoder
         self.l_L = 0.0          # [m]       Left wheel delta
         self.l_R = 0.0          # [m]       Right wheel delta
+        self.HomeDist = 0.0     # [m]       Distance from Home
+        self.HomeHead = 0.0     # [rad]     Heading towards Home
         
         # Internal control variables
         self.state = 0          # state variable
@@ -114,6 +117,8 @@ class RomiMM():
         self.d_c = 0            # little delta
         self.dist = 0.0         # maneuver distance storage
         self.halfcirc_flag = 0  # half-circle marker flag, for Lab 0x04
+        self.nin = 83*(3.14/180)# corrected "90 degrees" for Turn
+        self.ogdir = 0.0        # recorded heading before hitting obstacle
         
         # Closed-loop control objects
         self.LCL = LineController   # LineCL object used for line following control
@@ -188,9 +193,11 @@ class RomiMM():
             @param      duty_R      Target right motor speed, as a duty cycle percentage.
                                     Positive values drive forward and vice versa.
         ''' 
+        # Update dead reckoning
+        self.Dead_Reck()    # first of all, where are we?
         
         # ...and pass them to the motors!
-        self.dict_L["Motor"][1].put(duty_L)            # Left motor duty
+        self.dict_L["Motor"][1].put(duty_L * 1.06)            # Left motor duty
         self.dict_R["Motor"][1].put(duty_R)            # Right motor duty
         
         
@@ -219,7 +226,7 @@ class RomiMM():
         
 
     def Turn(self, angle): 
-        '''!@brief      Romi turn move.
+        '''!@brief      Romi turn move through an angle.
             @details    Romi turns on a dime through an angle. It checks which turning
                         direction is faster to get to the target heading. Then, it turns in
                         that direction until Romi is facing the target angle. This move task 
@@ -229,22 +236,61 @@ class RomiMM():
         # Calculate target
         target = self.phi + angle
         
-        # Saturation: Romi reads only < 6.28 (2pi)
+        # Saturation: Romi reads only 0 < phi < 6.28 (2pi)
         if target > 6.28:
             target -= 6.28
+        elif target < 0:
+            target += 6.28
             
-        # Which way to turn?            
+        # Which way to turn?    
         if angle > 0:
             # Turn left:
-            w_L = -15
-            w_R = 15         
+            w_L = -12
+            w_R = 12         
         else:
             # Turn right:
-            w_L = 15
-            w_R = -15
+            w_L = 12
+            w_R = -12
         
         # While we have not yet found the target angle:
-        while abs(target - self.phi) > 0.001:
+        while abs(target - self.phi) > 0.03:
+            # print(f'target: {target}')
+            # Keep turning
+            self.Drive(w_L, w_R)
+            yield 0         # not done!
+                
+        self.man_flag = 0   # lower maneuver flag
+        yield 1             # done!
+        
+        
+
+    def Face(self, heading): 
+        '''!@brief      Romi turn move to face a certain direaction.
+            @details    Romi turns on a dime to face a specific direction. It checks which turning
+                        direction is faster to get to the target heading. Then, it turns in
+                        that direction until Romi is facing the target angle. This move task 
+                        works as a GENERATOR, a SUB-TASK within a STATE in the MainTask.
+            @param      heading         Target heading in [rad].
+        '''     
+        # Calculate target
+        target = heading - self.phi
+        
+        if target < -3.14:
+            target += 6.28
+        
+        # Which way to turn? 
+        if target < 0 or target > 3.14:
+            # Turn right:
+            w_L = 13
+            w_R = -13     
+        else:
+            # Turn left:
+            w_L = -13
+            w_R = 13    
+        
+        # While we have not yet found the target angle:
+        while abs(heading - self.phi) > 0.02:
+            # print(f'target: {heading}')
             # Keep turning
             self.Drive(w_L, w_R)
             yield 0         # not done!
@@ -304,11 +350,25 @@ class RomiMM():
                                 the sensors are calibrated and have begun transmitting data. Once
                                 BNO reports it is ready, MasterMind zeros out its world coordinates
                                 before kicking into the first motion state.
-                            1:  ???
-                            2:  ???
-                            3:  ???
-                            4:  ???
-                            5:  ???
+                            1:  Chill state. Romi sends stop commands to motors and waits here 
+                                indefinitely. Used as the ending state of the term project, but is
+                                also helpful for troubleshoting.
+                            2:  Do Maneuver. This state just contains one LineMove. It is not used
+                                in the final project, but it's useful for troubleshooting.
+                            3:  Circle Follow: Lab 0x04. This was used in the Lab 0x04 assignment, 
+                                where Romi was required to follow a circular line track, similar to
+                                the term project, and stop in the same spot it started. It detects
+                                when Romi has passed through a half-circle, then watches for when X
+                                returns to Home 0 to stop.
+                            4:  Do Term Project. This state is a list of the required maneuvers to
+                                complete the term project track. It includes line following at the
+                                start, then a programmed object avoidance when the wall is detected,
+                                then another line follow until the finish line is found. Then, Romi
+                                goes to state 5, "Go Home".
+                            5:  Go Home. Romi determines a path Home using its current world position,
+                                turns in that direction, and travels half the distance back Home.
+                                Then it reevaluates the path Home, and repeats the half travel until
+                                Romi is within a small window of distance from Home.
                             
             @details    Like all of Romi's cooperative multitasking tasks, MainTask is written
                         as a generator function with an infinite loop. Each pass through the
@@ -321,13 +381,11 @@ class RomiMM():
             if self.BNO_cal_flag.full() and self.BNO_eul_x.get() != 0:
                 self.BNO_cal_flag.clear()   # ack flag, lower
                 self.BNO_z_flag.put(1)      # ask BNO to zero phi
-                self.LCL.Kp(7)              # set controller P gain
-                self.state = 1              # go to state 1
+                self.LCL.ChangeKp(0.4)        # set controller P gain
+                # self.state = 1              # go to state 1
                 
                 # Go to Lab 0x04
-                self.curr_man = self.LineFollow(self.ax_sens_val_share, 20)     # Create line follower gen
-                self.man_flag = 1                           # raise maneuver flag. we got one!
-                self.state = 3      # Start following line
+                self.state = 4      # Start following line
             
             yield self.state        # exit task
         
@@ -340,10 +398,8 @@ class RomiMM():
             # State 1: Chill
             if self.state == 1:
                 
-                
                 self.Drive(0, 0)        # quit movin
 
-                
                 yield self.state
                 
             # State 2: Do Maneuver
@@ -353,6 +409,23 @@ class RomiMM():
                 # finishes." And since the generator ends when we reach our goal, then
                 # it breaks out when the command is done! Pretty slick!
                 
+                    
+                # Go straight 200 mm (~8").
+                self.curr_man = self.LineMove(0.200, 30)    # Create line maneuver
+                self.man_flag = 1                           # raise maneuver flag. we got one!
+                
+                # Keep maneuvering until we've gone out beyond the obstacle.
+                while self.man_flag:
+                    next(self.curr_man)
+                    print(f' X = {self.X}; Y = {self.Y}; phi = {self.phi}')
+                    yield self.state
+                    
+                        
+                # Go straight 200 mm (~8").
+                self.curr_man = self.LineMove(0.200, 30)    # Create line maneuver
+                self.man_flag = 1                           # raise maneuver flag. we got one!
+                
+                # Keep maneuvering until we've gone out beyond the obstacle.
                 while self.man_flag:
                     next(self.curr_man)
                     print(f' X = {self.X}; Y = {self.Y}; phi = {self.phi}')
@@ -386,69 +459,11 @@ class RomiMM():
                     
             # State 4: Do Term Project
             elif self.state == 4:
-                # First, line follow until obstacle detected.
-                self.curr_man = self.LineFollow(self.ax_sens_val_share, 20) # Create line follower gen
-                
-                # Until the wall gets within 30mm of Romi's face...
-                while self.LidarDist.get() > 30:
-                    # ...continue line following
-                    next(self.curr_man)
-                    print(f' X = {self.X}; Y = {self.Y}; phi = {self.phi}')
-                    yield self.state
-                
-                # Next, handle obstacle avoidance.
-                # Turn left 90 degrees.
-                self.curr_man = self.Turn(3.14/2)           # Create turn maneuver
-                self.man_flag = 1                           # raise maneuver flag. we got one!
-                
-                # Keep maneuvering until we've turned.
-                while self.man_flag:
-                    next(self.curr_man)
-                    print(f' X = {self.X}; Y = {self.Y}; phi = {self.phi}')
-                    yield self.state
-                    
-                # Go straight 200 mm (~8").
-                self.curr_man = self.LineMove(0.200, 20)    # Create line maneuver
-                self.man_flag = 1                           # raise maneuver flag. we got one!
-                
-                # Keep maneuvering until we've gone out beyond the obstacle.
-                while self.man_flag:
-                    next(self.curr_man)
-                    print(f' X = {self.X}; Y = {self.Y}; phi = {self.phi}')
-                    yield self.state
-                
-                # Turn back to the right 90 degrees.
-                self.curr_man = self.Turn(-3.14/2)          # Create turn maneuver
-                self.man_flag = 1                           # raise maneuver flag. we got one!
-                
-                # Keep maneuvering until we've turned.
-                while self.man_flag:
-                    next(self.curr_man)
-                    print(f' X = {self.X}; Y = {self.Y}; phi = {self.phi}')
-                    yield self.state
-                    
-                # Go straight 400 mm (~16").
-                self.curr_man = self.LineMove(0.400, 20)    # Create line maneuver
-                self.man_flag = 1                           # raise maneuver flag. we got one!
-                
-                # Keep maneuvering until we've passed the obstacle.
-                while self.man_flag:
-                    next(self.curr_man)
-                    print(f' X = {self.X}; Y = {self.Y}; phi = {self.phi}')
-                    yield self.state
-                
-                # Turn back to the right 90 degrees.
-                self.curr_man = self.Turn(-3.14/2)          # Create turn maneuver
-                self.man_flag = 1                           # raise maneuver flag. we got one!
-                
-                # Keep maneuvering until we've turned.
-                while self.man_flag:
-                    next(self.curr_man)
-                    print(f' X = {self.X}; Y = {self.Y}; phi = {self.phi}')
-                    yield self.state
-                    
-                # Go straight 200 mm (~8") and get back to the line.
-                self.curr_man = self.LineMove(0.200, 20)    # Create line maneuver
+                # Set control gain!!
+                self.LCL.ChangeKp(0.45)        # set controller P gain
+            
+                # Go straight 100 mm to clear the start square.
+                self.curr_man = self.LineMove(0.100, 30)    # Create line maneuver
                 self.man_flag = 1                           # raise maneuver flag. we got one!
                 
                 # Keep maneuvering until we've reached the line again.
@@ -457,8 +472,22 @@ class RomiMM():
                     print(f' X = {self.X}; Y = {self.Y}; phi = {self.phi}')
                     yield self.state
                 
-                # Turn back to the left 90 degrees.
-                self.curr_man = self.Turn(3.14/2)          # Create turn maneuver
+                
+                # First, line follow until obstacle detected.
+                self.curr_man = self.LineFollow(self.sens_val_share, 35) # Create line follower gen
+                self.man_flag = 1                           # raise maneuver flag. we got one!
+
+                # Until the wall gets within 30mm of Romi's face...
+                while self.LidarDist.get() > 70:
+                    # ...continue line following
+                    next(self.curr_man)
+                    print(f' X = {self.X}; Y = {self.Y}; phi = {self.phi}')
+                    yield self.state
+                
+                
+                # Next, handle obstacle avoidance.
+                # Turn left 90 degrees.
+                self.curr_man = self.Face(self.nin)         # Create turn maneuver
                 self.man_flag = 1                           # raise maneuver flag. we got one!
                 
                 # Keep maneuvering until we've turned.
@@ -466,23 +495,180 @@ class RomiMM():
                     next(self.curr_man)
                     print(f' X = {self.X}; Y = {self.Y}; phi = {self.phi}')
                     yield self.state
+                    
+                    
+                # Go straight 250 mm (~8").
+                self.curr_man = self.LineMove(0.250, 30)    # Create line maneuver
+                self.man_flag = 1                           # raise maneuver flag. we got one!
                 
-                # Next, resume line following until reaching the finish.
-                self.curr_man = self.LineFollow(self.ax_sens_val_share, 20) # Create line follower gen
+                # Keep maneuvering until we've gone out beyond the obstacle.
+                while self.man_flag:
+                    next(self.curr_man)
+                    print(f' X = {self.X}; Y = {self.Y}; phi = {self.phi}')
+                    yield self.state
                 
-                # Until the finish line is detected...
-                while not self.finish_flag.full():
-                    # ...continue line following
+                
+                # Turn back to the right 90 degrees.
+                self.curr_man = self.Face(0.08)                # Create turn maneuver
+                self.man_flag = 1                           # raise maneuver flag. we got one!
+                
+                # Keep maneuvering until we've turned.
+                while self.man_flag:
                     next(self.curr_man)
                     print(f' X = {self.X}; Y = {self.Y}; phi = {self.phi}')
                     yield self.state
                     
+                    
+                # Go straight 450 mm (~16+").
+                self.curr_man = self.LineMove(0.450, 30)    # Create line maneuver
+                self.man_flag = 1                           # raise maneuver flag. we got one!
+                
+                # Keep maneuvering until we've passed the obstacle.
+                while self.man_flag:
+                    next(self.curr_man)
+                    print(f' X = {self.X}; Y = {self.Y}; phi = {self.phi}')
+                    yield self.state
+                
+                
+                # Turn back to the right 90 degrees.
+                self.curr_man = self.Face(6.28-self.nin)    # Create turn maneuver
+                self.man_flag = 1                           # raise maneuver flag. we got one!
+                
+                # Keep maneuvering until we've turned.
+                while self.man_flag:
+                    next(self.curr_man)
+                    print(f' X = {self.X}; Y = {self.Y}; phi = {self.phi}')
+                    yield self.state
+                    
+                    
+                # Go straight 300 mm (~8") until we get back to the line.
+                self.curr_man = self.LineMove(0.300, 30)    # Create line maneuver
+                self.man_flag = 1                           # raise maneuver flag. we got one!
+                
+                # Keep maneuvering until we've reached the line again.
+                # This requires man_flag and dist to be reset manually in the if
+                # block because it breaks the rules of LineMove
+                while self.man_flag:
+                    next(self.curr_man)
+                    print(f' X = {self.X}; Y = {self.Y}; phi = {self.phi}')
+                    # print(f'sumall: {self.sens_sum_share.get()}')
+                    
+                    # Watch for the line, and stop moving forward when we find it 
+                    if self.sens_sum_share.get() > 0.6:
+                        self.dist = 0.0     # reset distance var
+                        self.man_flag = 0
+                        
+                    yield self.state
+                    
+                    
+                # Scooch up 60mm to center Romi on the line.
+                self.curr_man = self.LineMove(0.060, 30)    # Create line maneuver
+                self.man_flag = 1                           # raise maneuver flag. we got one!
+                
+                # Keep maneuvering until we've reached the line again.
+                while self.man_flag:
+                    next(self.curr_man)
+                    print(f' X = {self.X}; Y = {self.Y}; phi = {self.phi}')
+                    yield self.state
+                
+                
+                # Turn back to the left 90 degrees.
+                self.curr_man = self.Face(0)           # Create turn maneuver
+                self.man_flag = 1                           # raise maneuver flag. we got one!
+                
+                # Keep maneuvering until we've turned.
+                while self.man_flag:
+                    next(self.curr_man)
+                    print(f' X = {self.X}; Y = {self.Y}; phi = {self.phi}')
+                    yield self.state
+                    
+                    
+                # Set control gain!!
+                self.LCL.ChangeKp(0.4)        # set controller P gain
+                
+                # Next, resume line following until reaching the finish.
+                self.curr_man = self.LineFollow(self.sens_val_share, 30) # Create line follower gen
+                self.man_flag = 1                           # raise maneuver flag. we got one!
+                self.finish_flag.clear()    # clear finish line flag just in case
+
+                # Until the finish line is detected...
+                while not self.finish_flag.full():
+                    # ...continue line following
+                    next(self.curr_man)
+                    # print(f' X = {self.X}; Y = {self.Y}; phi = {self.phi}')
+                    yield self.state
+                    
                 self.finish_flag.clear()    # clear finish line flag
                 
-                # Finally, return to the start.
                 
-                self.state = 1      # Go back to Chill
+                # Go straight 200 mm to center up in the finish square.
+                self.curr_man = self.LineMove(0.200, 25)    # Create line maneuver
+                self.man_flag = 1                           # raise maneuver flag. we got one!
+                
+                # Keep maneuvering until we've reached the line again.
+                while self.man_flag:
+                    next(self.curr_man)
+                    print(f' X = {self.X}; Y = {self.Y}; phi = {self.phi}')
+                    yield self.state
+                
+                
+                # Finally, go Home.
+                self.state = 5      # Go to "Go Home"
                 yield self.state    # done
+                
+            # State 5: Go Home
+            elif self.state == 5:
+                # Determine the path Home
+                self.HomeDist = math.sqrt(self.X**2 + self.Y**2)   
+                self.HomeHead = math.atan(self.Y/self.X)
+                # Saturate HomeHead
+                if self.HomeHead < 0:
+                    self.HomeHead += 6.28
+            
+                while self.HomeDist > 0.01:
+                    # Turn to face Home
+                    self.curr_man = self.Face(self.HomeHead)    # Create turn maneuver
+                    self.man_flag = 1                           # raise maneuver flag. we got one!
+                    
+                    # Keep maneuvering until we've turned.
+                    while self.man_flag:
+                        next(self.curr_man)
+                        print(f' X = {self.X}; Y = {self.Y}; phi = {self.phi}')
+                        yield self.state
+                        
+                    # Go straight towards Home
+                    self.curr_man = self.LineMove(self.HomeDist/2, 30)  # Create line maneuver
+                    self.man_flag = 1                                   # raise maneuver flag. we got one!
+                    
+                    # Keep maneuvering until we've reached the line again.
+                    while self.man_flag:
+                        next(self.curr_man)
+                        print(f' X = {self.X}; Y = {self.Y}; phi = {self.phi}')
+                        
+                        self.HomeDist = math.sqrt(self.X**2 + self.Y**2)   
+                        # Watch for Home, and stop moving forward if we find it 
+                        if self.HomeDist < 0.01:
+                            self.dist = 0.0     # reset distance var
+                            self.man_flag = 0
+                            
+                        yield self.state
+            
+                    # Reevaluate the path Home
+                    self.HomeDist = math.sqrt(self.X**2 + self.Y**2)   
+                    self.HomeHead = math.atan(self.Y/self.X)
+                    # Saturate HomeHead
+                    if self.HomeHead < 0:
+                        self.HomeHead += 6.28
+                
+                # Finally, stop.
+                self.state = 1      # Go to "Chill"
+                yield self.state    # done
+                
+                
+                
+                
+                
+                
                 
                 
                 

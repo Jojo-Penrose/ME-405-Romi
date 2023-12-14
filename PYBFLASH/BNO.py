@@ -124,7 +124,11 @@ class BNO():
         '''!@brief      A helper function used to set the operation mode (OPMODE) of the
                         BNO. A call to this function sends the required command to BNO
                         over I2C.
-            @details    How does this work?
+            @details    This method recieves a string that matches one of the five fusion 
+                        modes of the BNO055 detailed in the data sheet. The specified mode
+                        is keyed using a dict, and the correct register value is written
+                        to the operating mode configuration register using the read_register()
+                        method.
             @param      op_mode     A string used to choose the corresponding OPMODE code
                                     from a dictionary.
         '''
@@ -134,7 +138,9 @@ class BNO():
 
     def calibration_status(self):
         '''!@brief      A helper function used to decode the current system calibration codes.
-            @details    How does this work?
+            @details    This method reads the calibration status register and
+                        returns the status for each sensor by decoding the 8-
+                        bit register and parsing the corresponding status bits.
             @return     sys_stat    Current 'System' calibration state.
             @return     gyr_stat    Current 'Gyrometer' calibration state.
             @return     acc_stat    Current 'Accelerometer' calibration state.
@@ -159,12 +165,22 @@ class BNO():
         
         
     def read_register(self, reg_pair, mode=0, mult=1): 
-        '''!@brief      A helper function...?
-            @details    How does this work?
-            @param      reg_pair    ???    
-            @param      mode        ???    
-            @param      mult        ???    
-            @return     result      ???
+        '''!@brief      A helper function a to read two 8-bit registers and return the 
+                        concatenated 2-byte value.
+            @details    This method allows for the user to read the MSB and LSB
+                        byte registers and concatenates them. The bytes are stored
+                        in a buffer which is indexed and bitshifted accordingly. 
+                        The output can be the raw bytearray, unsigned integer, or 
+                        signed integer. For convenience, the return value can
+                        be multiplied by a factor to account for units.
+            @param      reg_pair    A tuple with the registers in big endian
+                                    order. 
+            @param      mode        An integer that selects the output mode. 
+            @param      mult        A float that optionally multiplies the
+                                    output by some specified factor.   
+            @return     result      Depending on the selected mode, the result
+                                    can be 2 hex values, an unsigned 2-byte 
+                                    integer, or a signed 2-byte integer.
         '''
         #read 8 bits of data, mode=0:, 
         buf = bytearray()
@@ -208,10 +224,23 @@ class BNO():
         '''!@brief      Main cotask task for BNO.
             @details    The BNO main task has states:
                 
-                            1:  ???
-                            2:  ???
-                            3:  ???
-                            4:  ???
+                            1:  Check for calibration file state. This state seeks
+                                out a calibration coefficients text file and if
+                                there is no file, go to state 2. If there is a 
+                                file go to state 4.
+                            2:  Recalibration state. Continuously read the
+                                calibration status register and print the status
+                                for each sensor on screen. Once all four bit-pairs
+                                are fully calibrated, go to state 3.
+                            3:  Write new calibration coefficients state. After
+                                calibration, read the calibration coefficients
+                                for each sensor and write them to a new text file
+                                as a string of hex values. Raise the calibrated
+                                flag and go to state 5.
+                            4:  Write coefficients from existing file state. If
+                                a calibration coefficient file exists, decode the
+                                hex values and write the corresponding bytes to
+                                each respective register. Afterwards, go to state 5.
                             5:  Normal operation state. Continuously read IMU registers and push
                                 data to corresponding Shares. Performs a short calculation for phi
                                 which accounts for zeroing out the IMU euler x angle.
