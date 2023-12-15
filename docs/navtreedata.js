@@ -26,20 +26,30 @@ var NAVTREE =
 [
   [ "ME 405 Romi Term Project", "index.html", [
     [ "Introduction & Challenge", "index.html#ss_intro", null ],
+    [ "GitHub & Project Repository", "index.html#ss_gith", null ],
     [ "Strategy", "index.html#ss_strat", [
       [ "Line Following", "index.html#ss_line", null ],
       [ "Obstacle Detection", "index.html#ss_obst", null ],
       [ "Finish Line Detection", "index.html#ss_fnsh", null ],
-      [ "Dead Reckoning and World Position", "index.html#ss_dead", null ]
+      [ "Dead Reckoning & World Position", "index.html#ss_dead", null ]
     ] ],
     [ "Component Overview", "index.html#ss_comp", [
       [ "Romi", "index.html#ss_romi", null ],
+      [ "Additional Hardware", "index.html#ss_hdwr", null ],
       [ "Microcontroller: STM32 Nucleo & The Shoe Of Brian", "index.html#ss_mcu", null ],
       [ "MicroPython & cotask/task_share", "index.html#ss_pyb", null ],
       [ "Romi Pin Connections", "index.html#ss_pins", null ],
       [ "PYBFLASH", "index.html#ss_pybflash", null ]
     ] ],
-    [ "README", "md__r_e_a_d_m_e.html", null ],
+    [ "Code Techniques Overview", "index.html#ss_tech", [
+      [ "BNO055 Calibration", "index.html#ss_bno", null ],
+      [ "LIDAR Sensor Integration", "index.html#ss_lidar", null ],
+      [ "Line Sensor Integration", "index.html#ss_lines", null ],
+      [ "Closed Loop Line Following Control", "index.html#ss_cl", null ],
+      [ "Romi MasterMind & Completing The Term Project Challenge", "index.html#ss_romimm", null ],
+      [ "Maneuver Generation", "index.html#ss_maneuv", null ]
+    ] ],
+    [ "Next Steps", "index.html#ss_next", null ],
     [ "Namespaces", "namespaces.html", [
       [ "Namespace List", "namespaces.html", "namespaces_dup" ],
       [ "Namespace Members", "namespacemembers.html", [
@@ -73,9 +83,9 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "_b_n_o_8py.html",
-"class_romi_enc_1_1_romi_enc.html#af781b2b64c069493f5a6e64eebbdf9ba",
-"classtask__share_1_1_queue.html#af15a266174233221505d2abf8fef7e95",
-"mainpage_8py.html"
+"class_romi_enc_1_1_romi_enc.html#a93ae614d415672ac23bdafe0b61f10cf",
+"classtask__share_1_1_queue.html#a0d4b70d239eb7244ff3b7e54d4a4981e",
+"main_8py.html#aa3b4146d1067f6e057829cd5d8383678"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

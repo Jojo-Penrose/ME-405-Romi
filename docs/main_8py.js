@@ -1,8 +1,9 @@
 var main_8py =
 [
+    [ "BlueButtonCB", "main_8py.html#a22968bc1444103f9d3a03627065edbe0", null ],
     [ "DistInt", "main_8py.html#af651d78fc88e140cf1fb5b87d78e688d", null ],
     [ "AR", "main_8py.html#a8044945c46d51517eec3e1e59c06bfdc", null ],
-    [ "ax_sens_val_share", "main_8py.html#a5254970e78828e5296e9beb9a4cd839b", null ],
+    [ "blue_int", "main_8py.html#ad9efd7aef685d2a4e6a368a27864482d", null ],
     [ "BNO", "main_8py.html#a527ecbd39313b12f2dd336d2e5afc53a", null ],
     [ "BNO_cali_flag", "main_8py.html#ac34d56cb9085e2606a8bab678ddefd79", null ],
     [ "BNO_eul_x", "main_8py.html#a3a56cf47af7801a405ed7bbdfe92244c", null ],
@@ -99,6 +100,8 @@ var main_8py =
     [ "sens_L2", "main_8py.html#a7334fe23e0da9aa0ab835d025d76593e", null ],
     [ "sens_R1", "main_8py.html#a4288123b84e8ba159be5febec85e217b", null ],
     [ "sens_R2", "main_8py.html#ab71836a81da2b1bdebc9e01e38cc8b36", null ],
+    [ "sens_sum_share", "main_8py.html#aa3b4146d1067f6e057829cd5d8383678", null ],
+    [ "sens_val_share", "main_8py.html#ab16a9016becd7dcac71af03746b2cef2", null ],
     [ "spd_L", "main_8py.html#a0314ef87225fac1aea43303c0f2547ae", null ],
     [ "spd_R", "main_8py.html#ab37364eec10e07e5f82208bba9536f63", null ],
     [ "ticksprev", "main_8py.html#ac95e8f5d030e31c8b600ba35e6e3ccf2", null ],
