@@ -15,3 +15,4 @@ Demo video:
 
 https://github.com/Jojo-Penrose/ME-405-Romi/assets/44389628/77b1579f-8f03-4c7c-a01b-a0501250551e
 
+Link to HQ video (Google Photos): https://photos.app.goo.gl/bUWZUaHJNUGdWGZD7
