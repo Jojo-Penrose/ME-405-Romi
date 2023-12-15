@@ -13,4 +13,5 @@ Please use the "Classes" section in the sidebar to view Class information, as th
 
 Demo video:
 
-https://github.com/Jojo-Penrose/ME-405-Romi/assets/44389628/15d7e8f0-4595-47b7-9239-f6f2b0ffb95b
+https://github.com/Jojo-Penrose/ME-405-Romi/assets/44389628/77b1579f-8f03-4c7c-a01b-a0501250551e
+
