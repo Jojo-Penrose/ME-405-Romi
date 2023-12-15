@@ -1,10 +1,9 @@
 var class_line_sensors_1_1_line_sensors =
 [
     [ "__init__", "class_line_sensors_1_1_line_sensors.html#a23799caf8f51eb448d29f2b06d84094d", null ],
-    [ "get_ax_sens_val", "class_line_sensors_1_1_line_sensors.html#a33047d23fb4bb9310f3c8e520aa776b9", null ],
+    [ "get_sens_val", "class_line_sensors_1_1_line_sensors.html#ad4f7b127a465c840dc51627094878134", null ],
     [ "MainTask", "class_line_sensors_1_1_line_sensors.html#a6c85de6f10186b398c7d34f8274362f2", null ],
-    [ "ax_sens_val", "class_line_sensors_1_1_line_sensors.html#a5c16d672cc17a50bb67ee036d6d7b76a", null ],
-    [ "ax_sens_val_share", "class_line_sensors_1_1_line_sensors.html#a24d4387a858cbd1f40e9430a70a7c6be", null ],
+    [ "allsum", "class_line_sensors_1_1_line_sensors.html#ab3c71c96eb9a8a139f817d1697d89e8d", null ],
     [ "C", "class_line_sensors_1_1_line_sensors.html#ac323eee4272e07e61b114c212fa658f8", null ],
     [ "Cval", "class_line_sensors_1_1_line_sensors.html#a661f3652a72454baf03356f5e379735a", null ],
     [ "FC", "class_line_sensors_1_1_line_sensors.html#adbd6ddcdc4cb42472a1434718b903d8f", null ],
@@ -16,7 +15,16 @@ var class_line_sensors_1_1_line_sensors =
     [ "FR2", "class_line_sensors_1_1_line_sensors.html#a4600b711504a949e5238f16565d0a556", null ],
     [ "L1", "class_line_sensors_1_1_line_sensors.html#a45c7b85bfdf470e97ab04562abe121be", null ],
     [ "L2", "class_line_sensors_1_1_line_sensors.html#a5cb0d22e10fe7c6819bc280d7b37c4dd", null ],
+    [ "midoff", "class_line_sensors_1_1_line_sensors.html#ac99849615eb902ad6a62a0c9eca154ab", null ],
+    [ "midweak", "class_line_sensors_1_1_line_sensors.html#a611f4839faf32876b9758700b2184fa0", null ],
+    [ "offline", "class_line_sensors_1_1_line_sensors.html#ac843e7ade784cdf4d253aeefe2ab416b", null ],
     [ "offline_flag", "class_line_sensors_1_1_line_sensors.html#a5978237cbe15a23aebe2df247266674b", null ],
     [ "R1", "class_line_sensors_1_1_line_sensors.html#aa52a7fe0f0e693b20516baf3ee468c95", null ],
-    [ "R2", "class_line_sensors_1_1_line_sensors.html#abd16873090f3a7ab05c3a7f1581de46a", null ]
+    [ "R2", "class_line_sensors_1_1_line_sensors.html#abd16873090f3a7ab05c3a7f1581de46a", null ],
+    [ "sens_sum_share", "class_line_sensors_1_1_line_sensors.html#af0207b94760f87562f5621360c6ed938", null ],
+    [ "sens_val", "class_line_sensors_1_1_line_sensors.html#ad7b0581ed27bce3f87c9b6521559bdf3", null ],
+    [ "sens_val_share", "class_line_sensors_1_1_line_sensors.html#a4cf8f1a61f8284199098b7d627e97644", null ],
+    [ "sumall", "class_line_sensors_1_1_line_sensors.html#a004d05856f6bebd1af596dd6ba477d51", null ],
+    [ "summid", "class_line_sensors_1_1_line_sensors.html#ad7499ce80e17d1ae91db14c892df1432", null ],
+    [ "whsens", "class_line_sensors_1_1_line_sensors.html#af2543f6a8b70fe26b652cbba08293896", null ]
 ];

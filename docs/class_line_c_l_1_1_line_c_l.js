@@ -1,10 +1,10 @@
 var class_line_c_l_1_1_line_c_l =
 [
     [ "__init__", "class_line_c_l_1_1_line_c_l.html#aec16c3c3f22a4d4886b437ed9b8fed92", null ],
+    [ "ChangeKd", "class_line_c_l_1_1_line_c_l.html#af73d1ce3c1234b6c10adad3389df04ee", null ],
+    [ "ChangeKi", "class_line_c_l_1_1_line_c_l.html#a15ba25141b94b3408090567df55039d1", null ],
+    [ "ChangeKp", "class_line_c_l_1_1_line_c_l.html#a60a1dee7d603b5342236570d807f0d42", null ],
     [ "controller", "class_line_c_l_1_1_line_c_l.html#acc49a55fb3a4cca70e347af53a28d31e", null ],
-    [ "Kd", "class_line_c_l_1_1_line_c_l.html#abbc94c53b50368d0bcce990ac8b354dc", null ],
-    [ "Ki", "class_line_c_l_1_1_line_c_l.html#a6ad3e1a41633510e9460d97ebfa21e1c", null ],
-    [ "Kp", "class_line_c_l_1_1_line_c_l.html#ad82495443fd0426ab2ebc2e013ca97a4", null ],
     [ "C", "class_line_c_l_1_1_line_c_l.html#a8825e3b23958c4831d1b5843df174c33", null ],
     [ "Cd", "class_line_c_l_1_1_line_c_l.html#a1d168c2757416c39f809124d5c915438", null ],
     [ "Ci", "class_line_c_l_1_1_line_c_l.html#a2322c351f796b2247eea3a5c2e61e9b2", null ],
