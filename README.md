@@ -1,4 +1,5 @@
 This is the home of the source code for the ME 405 Mechatronics term project, Romi, for Fall 2023.
+It is authored by Joseph Penrose & Paolo Navarro.
 
 For full documentation, view the project home page here: https://jojo-penrose.github.io/ME-405-Romi/index.html
 Please use the "Classes" section in the sidebar to view Class information, as the "Files" section is broken.
@@ -9,3 +10,7 @@ Please use the "Classes" section in the sidebar to view Class information, as th
 'docs' contains HTML for building the GitHub Pages homepage.
 
 'models' contains the 3D STL/STEP files for the additional 3D-printed Romi hardware for mounting line sensors.
+
+Demo video:
+
+https://github.com/Jojo-Penrose/ME-405-Romi/assets/44389628/15d7e8f0-4595-47b7-9239-f6f2b0ffb95b
