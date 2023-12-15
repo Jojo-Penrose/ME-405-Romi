@@ -4,16 +4,6 @@
     @details    RomiMM.py contains the class driver for Romi's main command and control system.
     @author:    Joseph Penrose & Paolo Navarro
     @date       November 16, 2023
-
-    N O T E S :        
-        
-'''
-'''!@file       RomiMM.py
-    @brief      Romi DC motor firmware
-    @details    RomiMM.py contains the RomiMM class, which is the main command and control
-                center for Romi.
-    @author     Joseph Penrose & Paolo Navarro
-    @date       November 16, 2023
 '''
 # Required modules
 import utime
@@ -197,8 +187,8 @@ class RomiMM():
         self.Dead_Reck()    # first of all, where are we?
         
         # ...and pass them to the motors!
-        self.dict_L["Motor"][1].put(duty_L * 1.06)            # Left motor duty
-        self.dict_R["Motor"][1].put(duty_R)            # Right motor duty
+        self.dict_L["Motor"][1].put(duty_L * 1.15)            # Left motor duty
+        self.dict_R["Motor"][1].put(duty_R * 1)            # Right motor duty
         
         
 
@@ -384,7 +374,7 @@ class RomiMM():
                 self.LCL.ChangeKp(0.4)        # set controller P gain
                 # self.state = 1              # go to state 1
                 
-                # Go to Lab 0x04
+                # Go to Term Project
                 self.state = 4      # Start following line
             
             yield self.state        # exit task
@@ -402,7 +392,7 @@ class RomiMM():
 
                 yield self.state
                 
-            # State 2: Do Maneuver
+            # State 2: Do Maneuver (straight line test)
             elif self.state == 2:
                 # This is a weird-looking call but it works great. Since the maneuver is
                 # a generator, this for loop says "keep calling the maneuver until it
@@ -541,6 +531,17 @@ class RomiMM():
                     yield self.state
                     
                     
+                # Go straight 100 mm to clear the wrong part of the track, just in case of drift.
+                self.curr_man = self.LineMove(0.100, 30)    # Create line maneuver
+                self.man_flag = 1                           # raise maneuver flag. we got one!
+                
+                # Keep maneuvering until we've passed the obstacle.
+                while self.man_flag:
+                    next(self.curr_man)
+                    print(f' X = {self.X}; Y = {self.Y}; phi = {self.phi}')
+                    yield self.state
+                    
+                    
                 # Go straight 300 mm (~8") until we get back to the line.
                 self.curr_man = self.LineMove(0.300, 30)    # Create line maneuver
                 self.man_flag = 1                           # raise maneuver flag. we got one!
@@ -561,8 +562,8 @@ class RomiMM():
                     yield self.state
                     
                     
-                # Scooch up 60mm to center Romi on the line.
-                self.curr_man = self.LineMove(0.060, 30)    # Create line maneuver
+                # Scooch up 50mm to center Romi on the line.
+                self.curr_man = self.LineMove(0.050, 30)    # Create line maneuver
                 self.man_flag = 1                           # raise maneuver flag. we got one!
                 
                 # Keep maneuvering until we've reached the line again.
